@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evil Santa's Workshop Control</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- PIN Screen -->
+    <div id="pin-screen" class="screen active">
+        <div class="pin-container">
+            <h1>WORKSHOP ACCESS</h1>
+            <p>ENTER ELF ID</p>
+            <div class="pin-display">
+                <span class="pin-dot"></span>
+                <span class="pin-dot"></span>
+                <span class="pin-dot"></span>
+                <span class="pin-dot"></span>
+            </div>
+            <div class="keypad">
+                <button class="key" data-key="1">1</button>
+                <button class="key" data-key="2">2</button>
+                <button class="key" data-key="3">3</button>
+                <button class="key" data-key="4">4</button>
+                <button class="key" data-key="5">5</button>
+                <button class="key" data-key="6">6</button>
+                <button class="key" data-key="7">7</button>
+                <button class="key" data-key="8">8</button>
+                <button class="key" data-key="9">9</button>
+                <button class="key" data-key="0">0</button>
+                <button class="key action" data-key="clear">CLR</button>
+                <button class="key action" data-key="enter">ENT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="main-screen" class="screen">
+        <div class="timer-container">
+            <div id="timer">40:00:00</div>
+        </div>
+
+        <div class="quadrants-container">
+            <div class="quadrant" id="q1">
+                <h2></h2>
+                <input type="text" class="code-input" placeholder="" data-index="0">
+                <div class="status-indicator">LOCKED</div>
+            </div>
+            <div class="quadrant" id="q2">
+                <h2></h2>
+                <input type="text" class="code-input" placeholder="" data-index="1">
+                <div class="status-indicator">LOCKED</div>
+            </div>
+            <div class="quadrant" id="q3">
+                <h2></h2>
+                <input type="text" class="code-input" placeholder="" data-index="2">
+                <div class="status-indicator">LOCKED</div>
+            </div>
+            <div class="quadrant" id="q4">
+                <h2></h2>
+                <input type="text" class="code-input" placeholder="" data-index="3">
+                <div class="status-indicator">LOCKED</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Popup -->
+    <div id="final-popup">
+        <div class="final-content">
+            <h1>SYSTEM OVERRIDE</h1>
+            <p class="victory-text">3132</p>
+            <div id="final-status">ALL SYSTEMS SECURE</div>
+            <div id="final-message">WORKSHOP UNLOCKED</div>
+        </div>
+    </div>
+
+    <audio id="alarm-sound" src="alarm.wav"></audio>
+    <audio id="ambient-music" src="ambient.mp3" loop></audio>
+    <audio id="click-sound" src="click.mp3"></audio>
+    <audio id="success-sound" src="success.mp3"></audio>
+    <audio id="fail-sound" src="fail.mp3"></audio>
+    <audio id="unlock-sound" src="unlock.mp3"></audio>
+    <script src="script.js"></script>
+</body>
+</html>
