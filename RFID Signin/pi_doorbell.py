@@ -8,6 +8,7 @@ import datetime
 import os
 import ctypes
 import csv
+import sys
 from pathlib import Path
 
 # --- Configuration ---
@@ -158,6 +159,19 @@ class RFIDClientApp:
         
         # Start Auto-Export Scheduler
         self.check_auto_export()
+
+        # Handle Window Close Explicity
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def on_close(self):
+        """ Cleanup threads and connections on exit """
+        try:
+            if self.client:
+                self.client.disconnect()
+        except:
+            pass
+        self.root.destroy()
+        sys.exit(0)
 
     def setup_styles(self):
         style = ttk.Style()
