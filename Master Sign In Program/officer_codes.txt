@@ -1,0 +1,8 @@
+# Officer codes file - keep this file in the SAME folder as tk_sign.py
+# CODE,Role
+1234,President
+2001,Treasurer
+2006,Vice President
+3333,Administrator
+4444,Event Coordinator
+5555,Advisor

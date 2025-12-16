@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELC Sign-In Kiosk</title>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- SheetJS for Excel Export -->
+    <script lang="javascript" src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+    <!-- EXTERNAL CONFIGURATION LOADER -->
+    <!-- This looks for a file named 'config.js' in the same folder -->
+    <script src="config.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --color-primary: #C99700;
+            --color-bg: #000000;
+            --color-panel: #141414;
+            --color-text: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-primary);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-primary);
+        }
+
+        .glass-panel {
+            background: var(--color-panel);
+            border: 1px solid #333;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-dark {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: var(--color-text);
+            transition: all 0.2s;
+        }
+
+        .input-dark:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(201, 151, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen overflow-hidden">
+    <div id="root" class="h-full w-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Icons (Embedded for reliability) ---
+        const ICONS = {
+            Calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>',
+            Clock: '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>',
+            Settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle>',
+            ArrowLeft: '<line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline>',
+            X: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
+            Check: '<polyline points="20 6 9 17 4 12"></polyline>',
+            Star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>',
+            Lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>',
+            Plus: '<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>',
+            Trash2: '<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line>'
+        };
+
+        const Icon = ({ name, size = 24, className }) => {
+            const svgContent = ICONS[name];
+            if (!svgContent) return null;
+            return <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={size}
+                height={size}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={className}
+                dangerouslySetInnerHTML={{ __html: svgContent }}
+            />;
+        };
+
+        // --- Constants & Utilities ---
+        const STUDENT_DOMAIN = "@student.monroecc.edu";
+        const DEFAULT_CLUB = "Engineering Leadership Council";
+        const DEFAULT_PIN = "3132";
+
+        const getTodayStr = () => new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const getTimeStr = () => new Date().toLocaleTimeString('en-US', { hour12: false });
+
+        // --- Main Component ---
+        const App = () => {
+            // View State: 'menu', 'setup-event', 'event', 'makerspace', 'settings', 'pin-check'
+            const [view, setView] = useState('menu');
+
+            // Data State
+            const [config, setConfig] = useState({
+                clubName: DEFAULT_CLUB,
+                pin: DEFAULT_PIN,
+                officerCodes: {}, // { "1234": "President" }
+                colors: {
+                    primary: "#C99700",
+                    background: "#000000",
+                    panel: "#141414",
+                    text: "#ffffff"
+                }
+            });
+
+            // Session State
+            const [eventSetup, setEventSetup] = useState({ topic: "", interests: [] });
+            const [eventQueue, setEventQueue] = useState([]);
+            const [presentOfficers, setPresentOfficers] = useState(new Set());
+            const [makerLogs, setMakerLogs] = useState([]);
+
+            // Initialize from window.ELC_CONFIG and set CSS variables
+            useEffect(() => {
+                if (window.ELC_CONFIG) {
+                    setConfig(prev => ({ ...prev, ...window.ELC_CONFIG }));
+                }
+            }, []);
+
+            // Update CSS Variables whenever config.colors changes
+            useEffect(() => {
+                const root = document.documentElement;
+                const { primary, background, panel, text } = config.colors || {};
+                if (primary) root.style.setProperty('--color-primary', primary);
+                if (background) root.style.setProperty('--color-bg', background);
+                if (panel) root.style.setProperty('--color-panel', panel);
+                if (text) root.style.setProperty('--color-text', text);
+            }, [config.colors]);
+
+            // Navigation Handlers
+            const startEvent = (data) => {
+                setEventSetup(data);
+                setView('event');
+            };
+
+            const handlePinSuccess = () => {
+                setView('settings');
+            };
+
+            return (
+                <div className="h-full w-full relative">
+                    {view === 'menu' && (
+                        <div className="h-full flex flex-col items-center justify-center space-y-8">
+                            <h1 className="text-5xl font-bold text-white mb-8">{config.clubName}</h1>
+                            <div className="grid grid-cols-2 gap-8">
+                                <button onClick={() => setView('setup-event')} className="glass-panel p-12 rounded-2xl hover:bg-[var(--color-primary)] hover:text-black transition-all group">
+                                    <Icon name="Calendar" size={64} className="mx-auto mb-4 text-[var(--color-primary)] group-hover:text-black" />
+                                    <span className="text-2xl font-bold">Start Meeting</span>
+                                </button>
+                                <button onClick={() => setView('makerspace')} className="glass-panel p-12 rounded-2xl hover:bg-[var(--color-primary)] hover:text-black transition-all group">
+                                    <Icon name="Clock" size={64} className="mx-auto mb-4 text-[var(--color-primary)] group-hover:text-black" />
+                                    <span className="text-2xl font-bold">MakerSpace Log</span>
+                                </button>
+                            </div>
+                            <button onClick={() => setView('pin-check')} className="absolute bottom-8 right-8 text-gray-600 hover:text-[var(--color-primary)]">
+                                <Icon name="Settings" size={32} />
+                            </button>
+                        </div>
+                    )}
+
+                    {view === 'pin-check' && (
+                        <PinCheck correctPin={config.pin} onSuccess={handlePinSuccess} onCancel={() => setView('menu')} />
+                    )}
+
+                    {view === 'setup-event' && (
+                        <EventSetup clubName={config.clubName} onStart={startEvent} onBack={() => setView('menu')} />
+                    )}
+
+                    {view === 'event' && (
+                        <EventMode
+                            config={config}
+                            setupData={eventSetup}
+                            queue={eventQueue}
+                            setQueue={setEventQueue}
+                            presentOfficers={presentOfficers}
+                            setPresentOfficers={setPresentOfficers}
+                            onExit={() => setView('menu')}
+                        />
+                    )}
+
+                    {view === 'makerspace' && (
+                        <MakerSpaceMode logs={makerLogs} setLogs={setMakerLogs} onExit={() => setView('menu')} />
+                    )}
+
+                    {view === 'settings' && (
+                        <Settings
+                            config={config}
+                            onSave={(newConfig) => setConfig(newConfig)}
+                            onBack={() => setView('menu')}
+                            makerLogs={makerLogs}
+                            eventQueue={eventQueue}
+                            setEventQueue={setEventQueue}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        const PinCheck = ({ correctPin, onSuccess, onCancel }) => {
+            const [pin, setPin] = useState("");
+            const [error, setError] = useState("");
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (pin === correctPin) onSuccess();
+                else {
+                    setError("Incorrect PIN");
+                    setPin("");
+                }
+            };
+
+            return (
+                <div className="flex items-center justify-center h-full bg-black/90 backdrop-blur-sm z-50 absolute inset-0">
+                    <form onSubmit={handleSubmit} className="glass-panel p-8 rounded-xl w-full max-w-md text-center">
+                        <Icon name="Lock" className="mx-auto text-[var(--color-primary)] mb-4" size={48} />
+                        <h2 className="text-2xl font-bold text-white mb-6">Officer Access</h2>
+                        <input
+                            type="password"
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value)}
+                            placeholder="Enter PIN"
+                            className="w-full text-center text-3xl tracking-widest p-4 rounded bg-black border border-gray-700 text-white focus:border-[var(--color-primary)] outline-none mb-4"
+                            autoFocus
+                        />
+                        {error && <p className="text-red-500 mb-4">{error}</p>}
+                        <div className="flex gap-4">
+                            <button type="button" onClick={onCancel} className="flex-1 py-3 rounded bg-gray-800 text-white hover:bg-gray-700">Cancel</button>
+                            <button type="submit" className="flex-1 py-3 rounded bg-[var(--color-primary)] text-black font-bold hover:bg-opacity-80">Unlock</button>
+                        </div>
+                    </form>
+                </div>
+            );
+        };
+
+        const EventSetup = ({ clubName, onStart, onBack }) => {
+            const [topic, setTopic] = useState("");
+            const [interestsRaw, setInterestsRaw] = useState("");
+
+            const handleStart = () => {
+                const interests = interestsRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                onStart({ topic, interests });
+            };
+
+            return (
+                <div className="h-full flex flex-col p-8 max-w-3xl mx-auto justify-center">
+                    <button onClick={onBack} className="mb-6 flex items-center text-gray-400 hover:text-white">
+                        <Icon name="ArrowLeft" className="mr-2" /> Back
+                    </button>
+                    <div className="glass-panel p-8 rounded-xl space-y-6">
+                        <h2 className="text-3xl font-bold text-white">Setup Meeting</h2>
+
+                        <div>
+                            <label className="block text-[var(--color-primary)] mb-2 text-sm uppercase tracking-wider font-bold">Club Name</label>
+                            <div className="text-xl text-white font-mono">{clubName}</div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[var(--color-primary)] mb-2 text-sm uppercase tracking-wider font-bold">Meeting Topic / Purpose</label>
+                            <input
+                                className="w-full input-dark p-4 rounded text-lg"
+                                placeholder="e.g. General Body Meeting, Guest Speaker..."
+                                value={topic}
+                                onChange={e => setTopic(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-[var(--color-primary)] mb-2 text-sm uppercase tracking-wider font-bold">Interests (Optional)</label>
+                            <p className="text-gray-500 text-xs mb-2">Comma separated buttons for users to click</p>
+                            <input
+                                className="w-full input-dark p-4 rounded text-lg"
+                                placeholder="e.g. Robotics, CAD, Funding, Social"
+                                value={interestsRaw}
+                                onChange={e => setInterestsRaw(e.target.value)}
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleStart}
+                            disabled={!topic}
+                            className="w-full bg-[var(--color-primary)] hover:bg-white hover:text-black text-black font-bold py-4 rounded text-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Launch Kiosk
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const EventMode = ({ config, setupData, queue, setQueue, presentOfficers, setPresentOfficers, onExit }) => {
+            const [form, setForm] = useState({ first: "", last: "", username: "" });
+            const [selectedInterests, setSelectedInterests] = useState(new Set());
+            const [officerCode, setOfficerCode] = useState("");
+            const [status, setStatus] = useState({ msg: "", type: "" }); // type: success, error
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!form.first || !form.last || !form.username) {
+                    setStatus({ msg: "Please fill all fields.", type: "error" });
+                    return;
+                }
+
+                const entry = {
+                    ...form,
+                    email: `${form.username}${STUDENT_DOMAIN}`,
+                    interests: Array.from(selectedInterests).join(", "),
+                    timestamp: new Date().toISOString()
+                };
+
+                setQueue([...queue, entry]);
+                setStatus({ msg: `Welcome, ${form.first}!`, type: "success" });
+
+                // Reset
+                setForm({ first: "", last: "", username: "" });
+                setSelectedInterests(new Set());
+                setTimeout(() => setStatus({ msg: "", type: "" }), 3000);
+            };
+
+            const handleOfficerCode = () => {
+                const role = config.officerCodes[officerCode];
+                if (role) {
+                    if (presentOfficers.has(role)) {
+                        setStatus({ msg: `${role} already recorded.`, type: "error" });
+                    } else {
+                        const newSet = new Set(presentOfficers);
+                        newSet.add(role);
+                        setPresentOfficers(newSet);
+                        setStatus({ msg: `Recorded: ${role}`, type: "success" });
+                    }
+                    setOfficerCode("");
+                } else {
+                    setStatus({ msg: "Invalid Code", type: "error" });
+                }
+                setTimeout(() => setStatus({ msg: "", type: "" }), 3000);
+            };
+
+            // Export Logic
+            const handleExport = () => {
+                // Transform data for Excel
+                const exportData = queue.map(entry => ({
+                    "First Name": entry.first,
+                    "Last Name": entry.last,
+                    "Email": entry.email,
+                    "Interests": entry.interests,
+                    "Time": new Date(entry.timestamp).toLocaleTimeString()
+                }));
+
+                const wb = XLSX.utils.book_new();
+
+                // Summary Sheet
+                const summaryData = [
+                    ["Date", getTodayStr()],
+                    ["Club", config.clubName],
+                    ["Meeting Topic", setupData.topic],
+                    ["Officers Present", Array.from(presentOfficers).join(", ")],
+                    ["Total Attendees", queue.length]
+                ];
+                const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+
+                // Attendees Sheet
+                const wsData = XLSX.utils.json_to_sheet(exportData);
+                XLSX.utils.book_append_sheet(wb, wsData, "Attendance");
+
+                XLSX.writeFile(wb, `${getTodayStr()} - ${config.clubName}.xlsx`);
+            };
+
+            return (
+                <div className="h-full flex flex-col">
+                    {/* Header */}
+                    <div className="p-6 border-b border-gray-800 bg-black flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-bold text-white">{config.clubName} <span className="text-gray-500 font-normal">Sign-In</span></h1>
+                            <p className="text-[var(--color-primary)]">{setupData.topic}</p>
+                        </div>
+                        <div className="flex items-center gap-6">
+                            <div className="text-right">
+                                <div className="text-xs text-gray-500 uppercase">Board Present</div>
+                                <div className="text-xl font-bold text-white">{presentOfficers.size}</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-xs text-gray-500 uppercase">Queued</div>
+                                <div className="text-xl font-bold text-[var(--color-primary)]">{queue.length}</div>
+                            </div>
+                            <button onClick={onExit} className="p-2 rounded hover:bg-gray-900 text-gray-500"><Icon name="X" /></button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Left: Form */}
+                        <div className="w-1/2 p-12 overflow-y-auto border-r border-gray-900">
+                            <form onSubmit={handleSubmit} className="space-y-6 max-w-lg mx-auto">
+                                <div>
+                                    <label className="block text-gray-400 mb-2">First Name</label>
+                                    <input
+                                        className="w-full input-dark p-4 rounded text-xl"
+                                        value={form.first}
+                                        onChange={e => setForm({ ...form, first: e.target.value })}
+                                        placeholder="John"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-400 mb-2">Last Name</label>
+                                    <input
+                                        className="w-full input-dark p-4 rounded text-xl"
+                                        value={form.last}
+                                        onChange={e => setForm({ ...form, last: e.target.value })}
+                                        placeholder="Doe"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-400 mb-2">Email Username</label>
+                                    <div className="flex items-center">
+                                        <input
+                                            className="flex-1 input-dark p-4 rounded-l text-xl lowercase"
+                                            value={form.username}
+                                            onChange={e => setForm({ ...form, username: e.target.value.toLowerCase() })}
+                                            placeholder="jdoe2"
+                                        />
+                                        <span className="bg-gray-800 text-gray-400 p-4 border border-gray-700 rounded-r border-l-0 select-none">
+                                            {STUDENT_DOMAIN}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button type="submit" className="w-full bg-[var(--color-primary)] hover:bg-white text-black font-bold py-4 rounded-lg text-xl shadow-lg transition-all transform active:scale-95 mt-8">
+                                    Record Entry
+                                </button>
+
+                                {status.msg && (
+                                    <div className={`p-4 rounded text-center font-bold animate-bounce ${status.type === 'error' ? 'text-red-500 bg-red-900/20' : 'text-green-400 bg-green-900/20'}`}>
+                                        {status.msg}
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+
+                        {/* Right: Interests & Officer Code */}
+                        <div className="w-1/2 bg-[#0a0a0a] p-12 flex flex-col">
+
+                            {/* Officer Entry */}
+                            <div className="flex justify-end mb-12 items-center gap-2">
+                                <span className="text-gray-500 text-sm">Officer Check-in:</span>
+                                <input
+                                    type="password"
+                                    className="input-dark p-2 rounded w-24 text-center tracking-widest"
+                                    maxLength={4}
+                                    value={officerCode}
+                                    onChange={e => setOfficerCode(e.target.value)}
+                                />
+                                <button onClick={handleOfficerCode} className="bg-gray-800 hover:bg-[var(--color-primary)] hover:text-black text-white p-2 rounded">
+                                    <Icon name="Check" size={20} />
+                                </button>
+                            </div>
+
+                            {/* Interests Grid */}
+                            {setupData.interests.length > 0 && (
+                                <div className="bg-[#1a1a1a] border border-[var(--color-primary)]/30 rounded-xl p-6 shadow-2xl">
+                                    <h3 className="text-[var(--color-primary)] font-bold mb-4 flex items-center gap-2">
+                                        <Icon name="Star" size={18} /> What are your interests?
+                                    </h3>
+                                    <div className="flex flex-wrap gap-3">
+                                        {setupData.interests.map(interest => {
+                                            const active = selectedInterests.has(interest);
+                                            return (
+                                                <button
+                                                    key={interest}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = new Set(selectedInterests);
+                                                        if (active) next.delete(interest);
+                                                        else next.add(interest);
+                                                        setSelectedInterests(next);
+                                                    }}
+                                                    className={`px-4 py-3 rounded-full border transition-all ${active ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] font-bold' : 'bg-black text-gray-300 border-gray-700 hover:border-white'}`}
+                                                >
+                                                    {interest}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-auto text-gray-500 text-sm">
+                                <h4 className="text-white font-bold mb-2">Instructions:</h4>
+                                <ul className="list-disc list-inside space-y-1">
+                                    <li>Enter name and email username.</li>
+                                    <li>Select relevant interests.</li>
+                                    <li>Click Record Entry.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MakerSpaceMode = ({ logs, setLogs, onExit }) => {
+            const [form, setForm] = useState({ first: "", last: "", username: "" });
+            const [status, setStatus] = useState("");
+            const [time, setTime] = useState(new Date().toLocaleTimeString());
+
+            useEffect(() => {
+                const timer = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const handleLog = (type) => {
+                if (!form.first || !form.last || !form.username) {
+                    setStatus("Please fill all fields");
+                    setTimeout(() => setStatus(""), 3000);
+                    return;
+                }
+                const newLog = {
+                    ...form,
+                    email: `${form.username}${STUDENT_DOMAIN}`,
+                    type, // 'in' or 'out'
+                    timestamp: new Date().toISOString()
+                };
+                setLogs([...logs, newLog]);
+                setStatus(`Logged ${type.toUpperCase()}: ${form.first} ${form.last}`);
+                setForm({ first: "", last: "", username: "" });
+                setTimeout(() => setStatus(""), 3000);
+            };
+
+            return (
+                <div className="h-full flex flex-col items-center justify-center p-8 relative">
+                    <button onClick={onExit} className="absolute top-8 right-8 text-gray-500 hover:text-white">
+                        <Icon name="X" size={32} />
+                    </button>
+
+                    {/* Clock */}
+                    <div className="absolute top-12 text-6xl font-bold text-[var(--color-primary)] font-mono tracking-widest">
+                        {time}
+                    </div>
+
+                    <div className="glass-panel p-12 rounded-xl text-center space-y-6 w-full max-w-2xl mt-24">
+                        <h2 className="text-3xl font-bold text-white mb-8">MakerSpace Log</h2>
+
+                        <div className="space-y-4">
+                            <input
+                                className="w-full input-dark p-4 rounded-xl text-xl"
+                                placeholder="First Name"
+                                value={form.first}
+                                onChange={e => setForm({ ...form, first: e.target.value })}
+                            />
+                            <input
+                                className="w-full input-dark p-4 rounded-xl text-xl"
+                                placeholder="Last Name"
+                                value={form.last}
+                                onChange={e => setForm({ ...form, last: e.target.value })}
+                            />
+                            <div className="flex items-center">
+                                <input
+                                    className="flex-1 input-dark p-4 rounded-l-xl text-xl lowercase"
+                                    placeholder="Email Username"
+                                    value={form.username}
+                                    onChange={e => setForm({ ...form, username: e.target.value.toLowerCase() })}
+                                />
+                                <span className="bg-gray-800 text-gray-400 p-4 border border-gray-700 rounded-r-xl border-l-0 select-none text-xl">
+                                    {STUDENT_DOMAIN}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6 pt-4">
+                            <button
+                                onClick={() => handleLog('in')}
+                                className="bg-green-700 hover:bg-green-600 text-white font-bold py-6 rounded-xl text-2xl transition-all"
+                            >
+                                Check IN
+                            </button>
+                            <button
+                                onClick={() => handleLog('out')}
+                                className="bg-red-900 hover:bg-red-800 text-white font-bold py-6 rounded-xl text-2xl transition-all"
+                            >
+                                Check OUT
+                            </button>
+                        </div>
+
+                        {status && <div className="text-[var(--color-primary)] text-xl font-bold animate-pulse">{status}</div>}
+                    </div>
+                </div>
+            );
+        };
+
+        const Settings = ({ config, onSave, onBack, makerLogs, eventQueue, setEventQueue, setupData, presentOfficers }) => {
+            const [localConfig, setLocalConfig] = useState(config);
+            const [codeForm, setCodeForm] = useState({ code: "", role: "" });
+
+            const handleSave = () => {
+                onSave(localConfig);
+                alert("Settings Saved!");
+            };
+
+            const addCode = () => {
+                if (codeForm.code && codeForm.role) {
+                    setLocalConfig({
+                        ...localConfig,
+                        officerCodes: { ...localConfig.officerCodes, [codeForm.code]: codeForm.role }
+                    });
+                    setCodeForm({ code: "", role: "" });
+                }
+            };
+
+            const removeCode = (code) => {
+                const newCodes = { ...localConfig.officerCodes };
+                delete newCodes[code];
+                setLocalConfig({ ...localConfig, officerCodes: newCodes });
+            };
+
+            const downloadConfigFile = () => {
+                const data = `window.ELC_CONFIG = ${JSON.stringify(localConfig, null, 4)};`;
+                const blob = new Blob([data], { type: 'text/javascript' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'config.js';
+                a.click();
+            };
+
+            const exportEventQueue = () => {
+                // 1. Prepare Header Info
+                const headerInfo = [
+                    ["Club Name:", config.clubName],
+                    ["Meeting Topic:", setupData?.topic || "N/A"],
+                    ["Date:", getTodayStr()],
+                    ["Officers Present:", presentOfficers ? Array.from(presentOfficers).join(", ") : "None"],
+                    [], // Empty row for spacing
+                    ["First Name", "Last Name", "Email", "Interests", "Time"] // Table Headers
+                ];
+
+                // 2. Prepare Data Rows
+                const dataRows = eventQueue.map(entry => [
+                    entry.first,
+                    entry.last,
+                    entry.email,
+                    entry.interests,
+                    new Date(entry.timestamp).toLocaleTimeString()
+                ]);
+
+                // 3. Combine
+                const finalData = [...headerInfo, ...dataRows];
+
+                // 4. Create Sheet
+                const ws = XLSX.utils.aoa_to_sheet(finalData);
+
+                // 5. Formatting (Column Widths)
+                const wscols = [
+                    { wch: 20 }, // First Name
+                    { wch: 20 }, // Last Name
+                    { wch: 30 }, // Email
+                    { wch: 40 }, // Interests
+                    { wch: 15 }  // Time
+                ];
+                ws['!cols'] = wscols;
+
+                // 6. Save
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
+                XLSX.writeFile(wb, `Event_Attendance_${getTodayStr()}.xlsx`);
+
+
+
+            };
+
+            const exportMakerLogs = () => {
+                const ws = XLSX.utils.json_to_sheet(makerLogs);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "MakerSpace Logs");
+                XLSX.writeFile(wb, `MakerSpace_Logs_${getTodayStr()}.xlsx`);
+            };
+
+            return (
+                <div className="h-full flex flex-col p-8">
+                    <div className="flex items-center justify-between mb-8">
+                        <button onClick={onBack} className="flex items-center text-gray-400 hover:text-white">
+                            <Icon name="ArrowLeft" className="mr-2" /> Back to Menu
+                        </button>
+                        <h1 className="text-3xl font-bold text-white">System Configuration</h1>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 overflow-y-auto">
+                        <div className="space-y-8">
+                            <div className="glass-panel p-6 rounded-xl">
+                                <h2 className="text-[var(--color-primary)] font-bold mb-4 border-b border-gray-700 pb-2">General Settings</h2>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-gray-400 mb-1">Club Name</label>
+                                        <input
+                                            className="w-full input-dark p-2 rounded"
+                                            value={localConfig.clubName}
+                                            onChange={e => setLocalConfig({ ...localConfig, clubName: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-400 mb-1">Admin PIN</label>
+                                        <input
+                                            className="w-full input-dark p-2 rounded"
+                                            value={localConfig.pin}
+                                            maxLength={4}
+                                            onChange={e => setLocalConfig({ ...localConfig, pin: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 pt-2">
+                                        <button onClick={handleSave} className="flex-1 bg-[var(--color-primary)] text-black font-bold py-3 px-4 rounded hover:bg-white">
+                                            Apply Changes
+                                        </button>
+                                        <button onClick={downloadConfigFile} className="flex-1 bg-gray-800 text-white font-bold py-3 px-4 rounded hover:bg-gray-700 border border-gray-600">
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Icon name="Check" size={18} /> Download Config
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 text-center">To make changes permanent on the flash drive, click "Download Config" and replace the <code>config.js</code> file on the drive.</p>
+                                </div>
+                            </div>
+
+                            {/* Appearance Settings */}
+                            <div className="glass-panel p-6 rounded-xl">
+                                <h2 className="text-[var(--color-primary)] font-bold mb-4 border-b border-gray-700 pb-2">Appearance</h2>
+                                <div className="space-y-4">
+                                    {localConfig.colors && Object.entries(localConfig.colors).map(([key, value]) => (
+                                        <div key={key}>
+                                            <label className="block text-gray-400 mb-1 capitalize">{key}</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="color"
+                                                    value={value}
+                                                    onChange={e => {
+                                                        const newColors = { ...localConfig.colors, [key]: e.target.value };
+                                                        setLocalConfig({ ...localConfig, colors: newColors });
+                                                    }}
+                                                    className="h-10 w-16 rounded cursor-pointer border-none p-0 bg-transparent"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={value}
+                                                    onChange={e => {
+                                                        const newColors = { ...localConfig.colors, [key]: e.target.value };
+                                                        setLocalConfig({ ...localConfig, colors: newColors });
+                                                    }}
+                                                    className="flex-1 input-dark p-2 rounded uppercase"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {!localConfig.colors && <p className="text-gray-500">No color configuration found.</p>}
+
+                                    <div className="pt-4">
+                                        <button onClick={handleSave} className="w-full bg-[var(--color-primary)] text-black font-bold py-3 px-4 rounded hover:bg-white transition-colors shadow-lg">
+                                            Apply Colors
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="glass-panel p-6 rounded-xl">
+                                <h2 className="text-[var(--color-primary)] font-bold mb-4 border-b border-gray-700 pb-2">Data Management</h2>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className="text-white font-bold">MakerSpace Logs</div>
+                                            <div className="text-xs text-gray-500">{makerLogs.length} records stored</div>
+                                        </div>
+                                        <button onClick={exportMakerLogs} className="bg-gray-800 text-white px-3 py-1 rounded hover:bg-[var(--color-primary)] hover:text-black text-sm">Export .xlsx</button>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className="text-white font-bold">Pending Event Queue</div>
+                                            <div className="text-xs text-gray-500">{eventQueue.length} records stored</div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={exportEventQueue} className="bg-gray-800 text-white px-3 py-1 rounded hover:bg-[var(--color-primary)] hover:text-black text-sm">Export .xlsx</button>
+                                            <button onClick={() => { if (confirm("Clear pending queue?")) setEventQueue([]) }} className="bg-red-900/30 text-red-400 border border-red-900 px-3 py-1 rounded hover:bg-red-900 hover:text-white text-sm">Clear</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Officer Codes */}
+                        <div className="glass-panel p-6 rounded-xl h-fit">
+                            <h2 className="text-[var(--color-primary)] font-bold mb-4 border-b border-gray-700 pb-2">Officer Codes</h2>
+
+                            <div className="flex gap-2 mb-4">
+                                <input
+                                    placeholder="Code (1234)"
+                                    className="input-dark p-2 rounded w-24 text-center"
+                                    maxLength={4}
+                                    value={codeForm.code}
+                                    onChange={e => setCodeForm({ ...codeForm, code: e.target.value })}
+                                />
+                                <input
+                                    placeholder="Role (President)"
+                                    className="input-dark p-2 rounded flex-1"
+                                    value={codeForm.role}
+                                    onChange={e => setCodeForm({ ...codeForm, role: e.target.value })}
+                                />
+                                <button onClick={addCode} className="bg-green-700 text-white p-2 rounded hover:bg-green-600"><Icon name="Plus" size={20} /></button>
+                            </div>
+
+                            <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {Object.entries(localConfig.officerCodes).map(([code, role]) => (
+                                    <div key={code} className="flex justify-between items-center bg-[#111] p-3 rounded border border-gray-800">
+                                        <div className="flex gap-4">
+                                            <span className="font-mono text-[var(--color-primary)]">{code}</span>
+                                            <span className="text-white">{role}</span>
+                                        </div>
+                                        <button onClick={() => removeCode(code)} className="text-gray-600 hover:text-red-500"><Icon name="Trash2" size={16} /></button>
+                                    </div>
+                                ))}
+                                {Object.keys(localConfig.officerCodes).length === 0 && <p className="text-gray-600 text-center italic">No codes configured.</p>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>

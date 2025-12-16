@@ -1,0 +1,24 @@
+
+================================================================================
+Traceback (most recent call last):
+  File "c:\Users\morei\OneDrive\Connor The Maker Socials\CODE\Sign In\Python Version\tk_sign.py", line 981, in <module>
+    main()
+  File "c:\Users\morei\OneDrive\Connor The Maker Socials\CODE\Sign In\Python Version\tk_sign.py", line 775, in main
+    _refresh_settings_menu()  # initialize locked
+  File "c:\Users\morei\OneDrive\Connor The Maker Socials\CODE\Sign In\Python Version\tk_sign.py", line 749, in _refresh_settings_menu
+    settings_menu.entryconfig(idx_codes_open - 1, state=state)  # cascade itself
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.10_3.10.3056.0_x64__qbz5n2kfra8p0\lib\tkinter\__init__.py", line 3398, in entryconfigure
+    return self._configure(('entryconfigure', index), cnf, kw)
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.10_3.10.3056.0_x64__qbz5n2kfra8p0\lib\tkinter\__init__.py", line 1665, in _configure
+    self.tk.call(_flatten((self._w, cmd)) + self._options(cnf))
+_tkinter.TclError: bad menu entry index "-1"
+
+
+================================================================================
+Traceback (most recent call last):
+  File "c:\Users\morei\OneDrive\OLD CTM\CODE\Sign In\Python Version\tk_sign.py", line 1305, in <module>
+    main()
+  File "c:\Users\morei\OneDrive\OLD CTM\CODE\Sign In\Python Version\tk_sign.py", line 1250, in main
+    prompt.grid_columnfigure(0, weight=1)
+AttributeError: 'Frame' object has no attribute 'grid_columnfigure'
+
