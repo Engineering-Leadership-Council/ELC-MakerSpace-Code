@@ -306,20 +306,39 @@ class RFIDClientApp:
                                     bg=SUCCESS_GREEN, fg="white",
                                     command=self.toggle_action,
                                     width=24, height=2, relief="flat")
-        self.btn_action.pack(pady=(0, 20))
+        self.btn_action.pack(pady=(0, 40))
         
-        lbl = ttk.Label(center_frame, text="Waiting for Card Scan...", style='SubHeader.TLabel', foreground=MCC_GOLD)
-        lbl.pack(pady=(0, 10))
+        # Welcome Message Area
+        self.lbl_welcome_header = ttk.Label(center_frame, 
+                                            text="Welcome to the\nEngineering Leadership Council MakerSpace", 
+                                            foreground=MCC_GOLD, 
+                                            background=MCC_BLACK,
+                                            font=('Segoe UI', 24, 'bold'),
+                                            justify="center")
+        self.lbl_welcome_header.pack(pady=20)
+
+        # Dynamic Name Label
+        self.lbl_name = ttk.Label(center_frame, 
+                                  text="Please Scan Card", 
+                                  foreground="white", 
+                                  background=MCC_BLACK,
+                                  font=('Segoe UI', 32, 'bold'),
+                                  justify="center")
+        self.lbl_name.pack(pady=20)
+
+        # Time/Status Label
+        self.lbl_status_msg = ttk.Label(center_frame, 
+                                        text="", 
+                                        foreground="gray", 
+                                        background=MCC_BLACK,
+                                        font=('Segoe UI', 18),
+                                        justify="center")
+        self.lbl_status_msg.pack(pady=10)
         
-        self.log_display = tk.Text(center_frame, height=15, width=65, state="disabled",
-                                   bg="#2A2A2A", fg="white", font=("Consolas", 10),
-                                   insertbackground="white", relief="flat", padx=10, pady=10)
-        self.log_display.pack(pady=10, expand=True, fill='both')
+        ttk.Label(center_frame, text="* Logs auto-export to Excel at 11:59 PM", foreground="gray", font=('Segoe UI', 9, 'italic')).pack(side="bottom", pady=20)
         
-        ttk.Label(center_frame, text="* Logs auto-export to Excel at 11:59 PM", foreground="gray", font=('Segoe UI', 9, 'italic')).pack()
-        
-        # Manual Export Button (optional, but good for testing)
-        ttk.Button(center_frame, text="Force Export Log", command=self.export_to_excel).pack(pady=5)
+        # Manual Export Button (optional)
+        ttk.Button(center_frame, text="Force Export Log", command=self.export_to_excel).pack(side="bottom", pady=5)
 
     def toggle_action(self):
         if self.scan_action == "SIGN IN":
@@ -392,19 +411,28 @@ class RFIDClientApp:
 
     def _update_read_log(self, data):
         if self.mode == "READ":
-            display_msg = self.process_scan_data(data)
-            timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+            # Process data (returns display_msg, but we want the struct)
+            self.process_scan_data(data)
             
-            self.log_display.config(state="normal")
-            
-            # MEMORY OPTIMIZATION: Truncate log if too long (keep last 200 lines)
-            num_lines = int(self.log_display.index('end-1c').split('.')[0])
-            if num_lines > 200:
-                self.log_display.delete('1.0', '2.0')
+            # Get the record we just added
+            if self.log_data:
+                record = self.log_data[-1]
+                fname = record.get("First Name", "Unknown")
+                lname = record.get("Last Name", "")
+                action = record.get("Action", "Scan")
+                timestamp = record.get("Time", "")
+                
+                # Update UI
+                if fname != "Unknown":
+                    self.lbl_welcome_header.config(text=f"Welcome {fname} {lname} to the\nEngineering Leadership Council MakerSpace")
+                    self.lbl_name.config(text=f"{fname} {lname}", foreground=SUCCESS_GREEN)
+                else:
+                    self.lbl_welcome_header.config(text="Welcome to the\nEngineering Leadership Council MakerSpace")
+                    self.lbl_name.config(text="Unknown Card", foreground=ERROR_RED)
 
-            self.log_display.insert(tk.END, f"[{timestamp}] {display_msg}\n")
-            self.log_display.see(tk.END)
-            self.log_display.config(state="disabled")
+                self.lbl_status_msg.config(text=f"{action} Recorded at {timestamp}")
+                
+            # Clear logic after delay? For now leaving it static until next scan.
 
     # --- EXPORT LOGIC ---
     def check_auto_export(self):
