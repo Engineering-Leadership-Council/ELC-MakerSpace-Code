@@ -5,12 +5,12 @@ echo "--- ELC MakerSpace RFID Server Setup ---"
 # 1. Install Dependencies
 echo "[1/3] Installing Python Libraries..."
 if command -v pip3 &> /dev/null; then
-    sudo pip3 install mfrc522 adafruit-circuitpython-neopixel RPi.GPIO
+    sudo pip3 install mfrc522 adafruit-circuitpython-neopixel RPi.GPIO --break-system-packages || sudo pip3 install mfrc522 adafruit-circuitpython-neopixel RPi.GPIO
 else
     echo "pip3 not found. Installing python3-pip..."
     sudo apt-get update
     sudo apt-get install -y python3-pip
-    sudo pip3 install mfrc522 adafruit-circuitpython-neopixel RPi.GPIO
+    sudo pip3 install mfrc522 adafruit-circuitpython-neopixel RPi.GPIO --break-system-packages || sudo pip3 install mfrc522 adafruit-circuitpython-neopixel RPi.GPIO
 fi
 
 # 2. Determine Paths
