@@ -141,6 +141,7 @@ class RFIDClientApp:
         self.scan_action = "SIGN IN" # Default action
         self.log_data = [] # List to hold dictionaries of daily scans
         self.last_export_date = None
+        self.clear_timer = None
 
         # Load last IP
         self.last_ip = "192.168.1.100"
@@ -432,7 +433,20 @@ class RFIDClientApp:
 
                 self.lbl_status_msg.config(text=f"{action} Recorded at {timestamp}")
                 
-            # Clear logic after delay? For now leaving it static until next scan.
+
+                
+                # Reset Timer
+                if self.clear_timer:
+                    self.root.after_cancel(self.clear_timer)
+                self.clear_timer = self.root.after(5000, self.clear_display)
+
+    def clear_display(self):
+        """ Resets the display to waiting state """
+        if self.mode == "READ":
+            self.lbl_welcome_header.config(text="Welcome to the\nEngineering Leadership Council MakerSpace")
+            self.lbl_name.config(text="Please Scan Card", foreground="white")
+            self.lbl_status_msg.config(text="")
+            self.clear_timer = None
 
     # --- EXPORT LOGIC ---
     def check_auto_export(self):
