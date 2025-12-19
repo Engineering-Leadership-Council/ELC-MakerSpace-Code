@@ -214,6 +214,24 @@ class RFIDClientApp:
         style.configure('TLabelframe', background=MCC_BLACK, foreground=MCC_GOLD)
         style.configure('TLabelframe.Label', background=MCC_BLACK, foreground=MCC_GOLD, font=('Segoe UI', 10, 'bold'))
 
+        # Combobox
+        style.configure('TCombobox', 
+                        fieldbackground=MCC_BLACK, 
+                        background=MCC_GOLD, 
+                        foreground=TEXT_WHITE,
+                        arrowcolor="black",
+                        darkcolor=MCC_BLACK,
+                        lightcolor=MCC_BLACK,
+                        selectbackground=MCC_GOLD,
+                        selectforeground="black",
+                        bordercolor=MCC_GOLD)
+        
+        style.map('TCombobox', 
+                  fieldbackground=[('readonly', MCC_BLACK)],
+                  selectbackground=[('readonly', MCC_GOLD)],
+                  selectforeground=[('readonly', "black")],
+                  foreground=[('readonly', TEXT_WHITE)])
+
     def setup_ui(self):
         # Header
         header_frame = tk.Frame(self.root, bg=HEADER_BLACK, padx=20, pady=15)
