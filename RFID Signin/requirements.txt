@@ -1,5 +1,0 @@
-requests
-pyttsx3
-python-dotenv
-pandas
-openpyxl
