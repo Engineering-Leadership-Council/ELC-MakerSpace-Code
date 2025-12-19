@@ -26,6 +26,8 @@ OFFICERS_FILE = "officers.json"
 # Secrets (Load from Env or Default)
 ADMIN_PASSCODE = os.getenv("ADMIN_PASSCODE", "1234") 
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
+OFFICER_DATA_JSON = os.getenv("OFFICER_DATA", "[]")
+
 
 # --- Colors & Styles ---
 MCC_GOLD = "#C99700"

@@ -6,7 +6,7 @@ import pyttsx3
 import csv
 import datetime
 from pathlib import Path
-from .config import OFFICERS_FILE, DISCORD_WEBHOOK_URL, BACKUP_CSV
+from .config import DISCORD_WEBHOOK_URL, BACKUP_CSV, OFFICER_DATA_JSON
 
 class OfficerManager:
     def __init__(self):
@@ -19,13 +19,12 @@ class OfficerManager:
             self.tts_engine = None
 
     def load_officers(self):
-        if os.path.exists(OFFICERS_FILE):
-            try:
-                with open(OFFICERS_FILE, 'r') as f:
-                    data = json.load(f)
-                    self.officers = data.get("officers", [])
-            except Exception as e:
-                print(f"Failed to load officers: {e}")
+        try:
+            self.officers = json.loads(OFFICER_DATA_JSON)
+        except json.JSONDecodeError:
+            print("Failed to parse OFFICER_DATA from environment")
+            self.officers = []
+
 
     def check_and_welcome(self, email):
         for officer in self.officers:
