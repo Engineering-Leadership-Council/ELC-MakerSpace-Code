@@ -9,6 +9,8 @@ import os
 import ctypes
 import csv
 import sys
+import requests
+import pyttsx3
 from pathlib import Path
 
 # --- Configuration ---
@@ -17,6 +19,10 @@ BACKUP_CSV = "daily_backup.csv"
 DEFAULT_PORT = 65432
 LAST_IP_FILE = "last_ip.txt"
 ADMIN_PASSCODE = "1234" # Simple passcode
+OFFICERS_FILE = "officers.json"
+# Webhook from Discord
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1445861126955991130/oAQmu_vk43ctLwTHYmQR2LH-GSv7hVtASORYfcg9X1XxGl4R-vmCsz69ukjFp7WG-IGP"
+
 
 # --- Colors & Styles ---
 MCC_GOLD = "#C99700"
@@ -142,6 +148,16 @@ class RFIDClientApp:
         self.log_data = [] # List to hold dictionaries of daily scans
         self.last_export_date = None
         self.clear_timer = None
+        
+        # Officer & TTS Setup
+        self.officers = []
+        self.load_officers()
+        
+        try:
+            self.tts_engine = pyttsx3.init()
+        except:
+            print("TTS Init Failed")
+            self.tts_engine = None
 
         # Load last IP
         self.last_ip = "192.168.1.100"
@@ -167,12 +183,68 @@ class RFIDClientApp:
     def on_close(self):
         """ Cleanup threads and connections on exit """
         try:
+            if self.tts_engine:
+                self.tts_engine.stop()
+        except: pass
+
+        try:
             if self.client:
                 self.client.disconnect()
         except:
             pass
         self.root.destroy()
         sys.exit(0)
+        
+    def load_officers(self):
+        if os.path.exists(OFFICERS_FILE):
+            try:
+                with open(OFFICERS_FILE, 'r') as f:
+                    data = json.load(f)
+                    self.officers = data.get("officers", [])
+            except Exception as e:
+                print(f"Failed to load officers: {e}")
+
+    def trigger_officer_welcome(self, officer):
+        # 1. TTS Welcome
+        title = officer.get("title", "")
+        name = officer.get("name", "")
+        
+        welcome_text = f"Welcome {title} {name}"
+        print(f"Speaking: {welcome_text}")
+        
+        if self.tts_engine:
+            try:
+                # Run TTS in a thread to not block UI? pyttsx3 runAndWait blocks.
+                # So we should probably put it in a thread.
+                threading.Thread(target=self._speak, args=(welcome_text,), daemon=True).start()
+            except Exception as e:
+                print(f"TTS Error: {e}")
+
+        # 2. Discord Ping
+        discord_msg = officer.get("discord_message", "")
+        if discord_msg and DISCORD_WEBHOOK_URL:
+             threading.Thread(target=self._send_discord, args=(discord_msg,), daemon=True).start()
+
+    def _speak(self, text):
+        try:
+            # We need a new engine instance per thread usually or lock it? 
+            # pyttsx3 isn't always thread safe. Safest is to do it in main loop or use a queue.
+            # But let's try direct first, or simple:
+            # Re-init in thread to be safe if the global one fails
+            engine = pyttsx3.init()
+            engine.say(text)
+            engine.runAndWait()
+        except Exception as e:
+            print(f"Thread TTS Error: {e}")
+
+    def _send_discord(self, message):
+        try:
+            payload = {"content": message, "username": "Doorbell Access"}
+            requests.post(DISCORD_WEBHOOK_URL, json=payload)
+        except Exception as e:
+             print(f"Discord Error: {e}")
+
+
 
     def setup_styles(self):
         style = ttk.Style()
@@ -390,6 +462,12 @@ class RFIDClientApp:
                 email_full = f"{email_user}@student.monroecc.edu"
             else:
                 email_full = email_user
+            
+            # Check for officer
+            for officer in self.officers:
+                if officer.get("email") == email_full:
+                    self.trigger_officer_welcome(officer)
+                    break
             
             parsed_record = {
                 "Date": date_str,

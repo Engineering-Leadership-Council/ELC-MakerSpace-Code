@@ -1,0 +1,10 @@
+{
+  "officers": [
+    {
+      "email": "example@student.monroecc.edu",
+      "title": "Officer",
+      "name": "John Doe",
+      "discord_message": "Officer John Doe has entered the building! <@&1015756793852477520>"
+    }
+  ]
+}
