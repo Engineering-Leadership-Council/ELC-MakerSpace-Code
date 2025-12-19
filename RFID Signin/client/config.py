@@ -23,7 +23,7 @@ EXPORT_DIR = "Exports"
 
 DEFAULT_PORT = 65432
 LAST_IP_FILE = "last_ip.txt"
-OFFICERS_FILE = "officers.json"
+# OFFICERS_FILE = "officers.json"
 
 # Secrets (Load from Env or Default)
 ADMIN_PASSCODE = os.getenv("ADMIN_PASSCODE", "1234") 
