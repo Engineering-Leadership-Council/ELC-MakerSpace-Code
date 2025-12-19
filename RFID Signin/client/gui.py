@@ -7,11 +7,12 @@ import datetime
 
 from .config import (
     MCC_BLACK, HEADER_BLACK, MCC_GOLD, TEXT_WHITE, ERROR_RED, SUCCESS_GREEN, ACTION_BLUE,
-    LAST_IP_FILE, ADMIN_PASSCODE, BACKUP_CSV
+    ADMIN_PASSCODE, BACKUP_CSV, LAST_IP
 )
 from .network import NetworkClient
 from .theme import apply_styles
-from .logic import OfficerManager, process_scan_data, append_to_backup, export_logs_to_excel
+from .logic import OfficerManager, process_scan_data, append_to_backup, export_logs_to_excel, update_last_ip
+
 
 class RFIDClientApp:
     def __init__(self, root):
@@ -50,10 +51,8 @@ class RFIDClientApp:
         self.clear_timer = None
 
         # Load last IP
-        self.last_ip = "192.168.1.100"
-        if os.path.exists(LAST_IP_FILE):
-            with open(LAST_IP_FILE, "r") as f:
-                self.last_ip = f.read().strip()
+        self.last_ip = LAST_IP
+
 
         apply_styles()
         self.setup_ui()
@@ -123,10 +122,10 @@ class RFIDClientApp:
         ip = simpledialog.askstring("Connect to Pi", "Enter Raspberry Pi IP Address:", initialvalue=self.last_ip)
         if ip:
             self.last_ip = ip
-            with open(LAST_IP_FILE, "w") as f:
-                f.write(ip)
+            update_last_ip(ip) # Update .env
                 
             self.lbl_connection.config(text=f"Connecting to {ip}...", foreground=MCC_GOLD)
+
             self.root.update()
             
             success, msg = self.client.connect(ip)

@@ -150,3 +150,35 @@ def export_logs_to_excel(log_data):
 
     except Exception as e:
         return False, str(e)
+
+def update_last_ip(new_ip):
+    """ Updates the LAST_IP in .env file safely """
+    env_path = Path(".env")
+    if not env_path.exists():
+        return # Can't update if not there
+    
+    try:
+        # Read all lines
+        with open(env_path, "r") as f:
+            lines = f.readlines()
+        
+        # Modify LAST_IP line or append
+        found = False
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith("LAST_IP="):
+                new_lines.append(f"LAST_IP={new_ip}\n")
+                found = True
+            else:
+                new_lines.append(line)
+        
+        if not found:
+            new_lines.append(f"\nLAST_IP={new_ip}\n")
+            
+        # Write back
+        with open(env_path, "w") as f:
+            f.writelines(new_lines)
+            
+    except Exception as e:
+        print(f"Failed to update .env: {e}")
+

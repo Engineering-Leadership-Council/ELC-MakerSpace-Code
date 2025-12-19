@@ -27,6 +27,7 @@ OFFICERS_FILE = "officers.json"
 ADMIN_PASSCODE = os.getenv("ADMIN_PASSCODE", "1234") 
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL", "")
 OFFICER_DATA_JSON = os.getenv("OFFICER_DATA", "[]")
+LAST_IP = os.getenv("LAST_IP", "192.168.1.100")
 
 
 # --- Colors & Styles ---
