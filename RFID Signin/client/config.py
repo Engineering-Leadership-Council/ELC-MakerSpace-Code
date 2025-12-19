@@ -17,8 +17,10 @@ except ImportError:
         pass
 
 # --- Configuration ---
-LOG_FILE = "rfid_logs_client.txt"
-BACKUP_CSV = "daily_backup.csv"
+LOG_FILE = "rfid_logs_client.txt" # Kept local or move? client side only
+BACKUP_CSV = os.path.join("Backups", "daily_backup.csv")
+EXPORT_DIR = "Exports"
+
 DEFAULT_PORT = 65432
 LAST_IP_FILE = "last_ip.txt"
 OFFICERS_FILE = "officers.json"

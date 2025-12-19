@@ -6,7 +6,8 @@ import pyttsx3
 import csv
 import datetime
 from pathlib import Path
-from .config import DISCORD_WEBHOOK_URL, BACKUP_CSV, OFFICER_DATA_JSON
+from .config import DISCORD_WEBHOOK_URL, BACKUP_CSV, OFFICER_DATA_JSON, EXPORT_DIR
+
 
 class OfficerManager:
     def __init__(self):
@@ -135,7 +136,8 @@ def export_logs_to_excel(log_data):
         month_folder = now.strftime("%B") 
         date_file_name = now.strftime("%d_attendance.xlsx")
 
-        base_path = Path("logs")
+        base_path = Path(EXPORT_DIR)
+
         full_path = base_path / year_folder / month_folder
         full_path.mkdir(parents=True, exist_ok=True)
         
