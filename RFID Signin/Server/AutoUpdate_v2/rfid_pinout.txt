@@ -1,0 +1,18 @@
+RC522 RFID Reader Pinout for Raspberry Pi
+
+-------------------------------------------------
+| RC522 Pin | Raspberry Pi Pin | RPi GPIO     |
+|-----------|------------------|--------------|
+| SDA (SS)  | Pin 24           | GPIO 8       |
+| SCK       | Pin 23           | GPIO 11      |
+| MOSI      | Pin 19           | GPIO 10      |
+| MISO      | Pin 21           | GPIO 9       |
+| IRQ       | Not Connected    | -            |
+| GND       | Pin 6 (or any)   | GND          |
+| RST       | Pin 22           | GPIO 25      |
+| 3.3V      | Pin 1            | 3.3V power   |
+-------------------------------------------------
+
+WARNING:
+- connect 3.3V ONLY. Connecting to 5V (Pin 2/4) will FRY the reader!
+- Ensure SPI is enabled in raspi-config (Interfacing Options -> SPI).
