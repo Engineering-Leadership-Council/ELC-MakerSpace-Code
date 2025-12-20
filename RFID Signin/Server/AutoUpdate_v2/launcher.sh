@@ -26,24 +26,26 @@ done
 if ping -c 1 -W 1 google.com &> /dev/null; then
     echo "Network connected. Checking for updates..." | tee -a "$LOG_FILE"
     
-    # Check if we can reach the repo
-    if wget --spider --quiet "$REPO_URL"; then
-        echo "Update found. Removing old file..." | tee -a "$LOG_FILE"
-        rm -f "$TARGET_FILE"
+    # Try downloading with wget first
+    echo "Attempting download with wget from: $REPO_URL" | tee -a "$LOG_FILE"
+    wget -O "$TARGET_FILE" "$REPO_URL" 2>> "$LOG_FILE"
+    
+    # If wget failed, try curl
+    if [ $? -ne 0 ]; then
+        echo "wget failed. Attempting download with curl..." | tee -a "$LOG_FILE"
+        curl -L -o "$TARGET_FILE" "$REPO_URL" 2>> "$LOG_FILE"
         
-        echo "Downloading new version..." | tee -a "$LOG_FILE"
-        wget -O "$TARGET_FILE" "$REPO_URL"
-        
-        if [ $? -eq 0 ]; then
-            echo "Download successful." | tee -a "$LOG_FILE"
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Both wget and curl failed to download update." | tee -a "$LOG_FILE"
+            echo "Detailed error info should be above (in $LOG_FILE)." | tee -a "$LOG_FILE"
         else
-            echo "Download failed! (wget error)" | tee -a "$LOG_FILE"
+            echo "Download successful (via curl)." | tee -a "$LOG_FILE"
         fi
     else
-        echo "Cannot reach GitHub repo. Skipping update." | tee -a "$LOG_FILE"
+        echo "Download successful (via wget)." | tee -a "$LOG_FILE"
     fi
 else
-    echo "No internet connection. Skipping update." | tee -a "$LOG_FILE"
+    echo "No internet connection (ping google.com failed). Skipping update." | tee -a "$LOG_FILE"
 fi
 
 # 3. Launch Server
