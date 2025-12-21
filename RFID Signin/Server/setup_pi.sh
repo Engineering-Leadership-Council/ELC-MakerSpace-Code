@@ -16,10 +16,11 @@ fi
 # 2. Determine Paths
 # Assumes this script is in the same directory as rpi_rfid_server.py
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SERVER_SCRIPT="$SCRIPT_DIR/rpi_rfid_server.py"
+LAUNCHER_SCRIPT="$SCRIPT_DIR/launcher.sh"
+chmod +x "$LAUNCHER_SCRIPT"
 SERVICE_FILE="/etc/systemd/system/rfid_server.service"
 
-echo "Detected Server Path: $SERVER_SCRIPT"
+echo "Detected Launcher Path: $LAUNCHER_SCRIPT"
 
 # 3. Create Systemd Service
 echo "[2/3] Configuring Startup Service..."
@@ -29,7 +30,7 @@ Description=ELC RFID Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 "$SERVER_SCRIPT"
+ExecStart=/bin/bash "$LAUNCHER_SCRIPT"
 WorkingDirectory=$SCRIPT_DIR
 StandardOutput=journal
 StandardError=journal
