@@ -12,9 +12,14 @@ import subprocess
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # --- Configuration ---
-HOST = '0.0.0.0'
-PORT = 65432
+HOST = os.getenv("HOST", '0.0.0.0')
+PORT = int(os.getenv("PORT", 65432))
 
 class RFIDServer:
     def __init__(self):

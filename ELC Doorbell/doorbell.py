@@ -4,9 +4,13 @@ import requests
 import threading
 
 
-WEBHOOK_URL = "https://discord.com/api/webhooks/1445861126955991130/oAQmu_vk43ctLwTHYmQR2LH-GSv7hVtASORYfcg9X1XxGl4R-vmCsz69ukjFp7WG-IGP"
+import os
+from dotenv import load_dotenv
 
-ROLE_ID = "1015756793852477520" 
+load_dotenv()
+
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+ROLE_ID = os.getenv("ROLE_ID")
 
 DISCORD_MESSAGE = {
     "content": f"This should ping people now! <@&{ROLE_ID}>",

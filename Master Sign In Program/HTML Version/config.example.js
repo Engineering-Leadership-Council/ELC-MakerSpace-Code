@@ -1,10 +1,10 @@
 window.ELC_CONFIG = {
     "clubName": "Engineering Leadership Council",
-    "pin": "3132",
+    "pin": "1234",
     "officerCodes": {
-        "1234": "President",
-        "2001": "Treasurer",
-        "2006": "Vice President",
+        "1111": "President",
+        "2222": "Treasurer",
+        "3333": "Vice President",
         "4444": "Event Coordinator",
         "5555": "Administrator"
     },
