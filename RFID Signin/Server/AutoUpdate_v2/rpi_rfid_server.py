@@ -5,6 +5,7 @@ import json
 import time
 import sys
 import queue
+import subprocess
 #Testing that the GIT Push update works
 
 # --- Hardware Imports ---
@@ -58,6 +59,9 @@ class RFIDServer:
         self.hw_thread = threading.Thread(target=self.hardware_loop, daemon=True)
         self.hw_thread.start()
 
+        self.update_thread = threading.Thread(target=self.update_check_loop, daemon=True)
+        self.update_thread.start()
+
         print("[READY] System is live.")
 
         while self.running:
@@ -72,6 +76,29 @@ class RFIDServer:
             except Exception as e:
                 print(f"[ERROR] Connection loop: {e}")
                 time.sleep(1)
+
+    def update_check_loop(self):
+        print("[UPDATE] Auto-update monitor started (Check every 60m)")
+        while self.running:
+            # Sleep in chunks to allow check of self.running
+            for _ in range(3600):
+                if not self.running: return
+                time.sleep(1)
+            
+            print("[UPDATE] Checking for updates...")
+            try:
+                result = subprocess.run(['git', 'pull'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    if "Already up to date." not in result.stdout:
+                        print("[UPDATE] Update detected! System will restart.")
+                        print(f"[UPDATE] Git Output: {result.stdout}")
+                        self.stop()
+                    else:
+                        print("[UPDATE] No updates found.")
+                else:
+                    print(f"[UPDATE] Git pull failed: {result.stderr}")
+            except Exception as e:
+                print(f"[UPDATE] Error checking for updates: {e}")
 
     def stop(self):
         self.running = False
