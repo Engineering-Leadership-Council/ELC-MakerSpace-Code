@@ -5,6 +5,7 @@ import json
 import time
 import sys
 import queue
+import os
 
 # --- Hardware Imports ---
 import RPi.GPIO as GPIO
@@ -128,6 +129,53 @@ class RFIDServer:
                 self.perform_scan()
             time.sleep(0.1)
 
+    def blink_onboard_led(self):
+        """Blinks the Raspberry Pi onboard ACT LED."""
+        led_path = None
+        # Common paths for Pi LEDs
+        for path in ["/sys/class/leds/ACT", "/sys/class/leds/led0"]:
+            if os.path.exists(path):
+                led_path = path
+                break
+        
+        if not led_path:
+            return 
+
+        try:
+            # Save current trigger
+            prev_trigger = "mmc0" # Default safe assumption
+            try:
+                with open(f"{led_path}/trigger", "r") as f:
+                    content = f.read().strip()
+                    # Trigger file format is like: none [mmc0] heartbeat
+                    if "[" in content:
+                        prev_trigger = content.split("[")[1].split("]")[0]
+                    else:
+                        prev_trigger = content
+            except:
+                pass # Use default if read fails
+
+            # Sequence: Off -> On -> Off -> On -> Restore
+            # Set to none to control brightness manually
+            with open(f"{led_path}/trigger", "w") as f:
+                f.write("none")
+            
+            # Blink pattern
+            for _ in range(2):
+                with open(f"{led_path}/brightness", "w") as f:
+                    f.write("1")
+                time.sleep(0.1)
+                with open(f"{led_path}/brightness", "w") as f:
+                    f.write("0")
+                time.sleep(0.1)
+
+            # Restore trigger
+            with open(f"{led_path}/trigger", "w") as f:
+                f.write(prev_trigger)
+                
+        except Exception as e:
+            print(f"[HW] LED Blink Warning: {e}")
+
     def perform_write(self, text):
         print(f"[HW] Writing: '{text}' (Place card within 15s)")
         start_time = time.time()
@@ -143,6 +191,7 @@ class RFIDServer:
                     success = True
                     msg = "Write Successful"
                     print("[HW] Write Complete!")
+                    self.blink_onboard_led()
                     break
                 except Exception as e:
                     # Catch Auth Error specifically if possible, logic is generic here
@@ -163,6 +212,7 @@ class RFIDServer:
                 id, text = self.reader.read()
                 data = text.strip()
                 print(f"[HW] Read: {data}")
+                self.blink_onboard_led()
                 self.send_to_client({"type": "READ", "data": data})
                 time.sleep(2)
             except Exception as e:
